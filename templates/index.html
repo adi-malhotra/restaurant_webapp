@@ -1,18 +1,66 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Home Page</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
 </head>
 <body>
-    <p>Hello, {{.Name}}</p>
-
-    {{ if .DBStatus}}
-    <p>Database connection is on!</p>
-    {{ else }}
-    <p>Database connecton is off!</p>
-    {{end}}
+    <form id="searchform" onsubmit="return false">
+        <label for="search">Enter city name</label>
+        <input name = "search">
+        <input type="submit" value="Search" onclick="searchSubmit()">
+    </form>
+    <br>
+    <table width="100%" border="1px solid black">
+        <thead>
+            <tr style="text-align:center">
+                <th width = "20%">Restaurant Name</th>
+                <th width = "25%">Location</th>
+                <th width = "25%">Cuisines</th>
+                <th width = "15%">User Rating</th>
+                <th width = "15%">Average cost for two</th>
+            </tr>
+        </thead>
+        <tbody id="search-results" style="text-align:center"></tbody>
+    </table>
+    <script type="text/javascript">
+        function searchSubmit() {
+            var form = document.querySelector("form")
+            var data = new FormData(form)
+            axios.post("/search")
+            .then((response) => {
+                if(!response)
+                    return;
+                var searchResults = document.getElementById("search-results")
+                while(searchResults.childNodes.length){
+                    searchResults.removeChild(searchResults.firstChild)
+                }
+                for(var result in response.data){
+                    var row = document.createElement("tr");
+                    var restaurantName = document.createElement("td");
+                    restaurantName.textContent = response.data[result].RestaurantName
+                    row.appendChild(restaurantName)
+                    var location = document.createElement("td");
+                    location.textContent = response.data[result].Location
+                    row.appendChild(location)
+                    var cuisines = document.createElement("td");
+                    cuisines.textContent = response.data[result].Cuisines
+                    row.appendChild(cuisines)
+                    var userRating = document.createElement("td");
+                    userRating.textContent = response.data[result].UserRating
+                    row.appendChild(userRating)
+                    var avgCost = document.createElement("td");
+                    avgCost.textContent = response.data[result].AvgCost
+                    row.appendChild(avgCost)
+                    searchResults.appendChild(row)
+                }
+            })
+            .catch((err) => {
+                console.error(err);                
+            })
+        }
+    </script>
 </body>
 </html>
