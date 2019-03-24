@@ -8,7 +8,7 @@
 </head>
 <body>
     <form id="searchform" onsubmit="return false">
-        <label for="search">Enter city name</label>
+        <label>Enter city name: </label>
         <input name = "search">
         <input type="submit" value="Search" onclick="searchSubmit()">
     </form>
@@ -29,7 +29,7 @@
         function searchSubmit() {
             var form = document.querySelector("form")
             var data = new FormData(form)
-            axios.post("/search")
+            axios.post("/search", data)
             .then((response) => {
                 if(!response)
                     return;

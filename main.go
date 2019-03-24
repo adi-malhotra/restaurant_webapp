@@ -1,11 +1,12 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io/ioutil"
 	"net/http"
+	"net/url"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -23,35 +24,62 @@ type Results struct {
 	AvgCost        int
 }
 
+const apiKey = "7d2e58d76328a93bb73cb74a167a58d7"
+
 func main() {
 
 	templates := template.Must(template.ParseFiles("templates/index.html"))
-	db, _ := sql.Open("sqlite3", "dev.db")
+	// db, _ := sql.Open("sqlite3", "dev.db")
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		p := person{Name: "Aditya"}
-		name := r.FormValue("name")
-		if name != "" {
-			p.Name = name
-		}
-		p.DBStatus = db.Ping() == nil
-		err := templates.ExecuteTemplate(w, "index.html", p)
+		// p := person{Name: "Aditya"}
+		// name := r.FormValue("name")
+		// if name != "" {
+		// 	p.Name = name
+		// }
+		// fmt.Print(name)
+		// p.DBStatus = db.Ping() == nil
+		err := templates.ExecuteTemplate(w, "index.html", nil)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	})
 	http.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
-		results := []Results{
-			Results{"Levels", "Hauz Khas Village", "Italian, North Indian, Mexican", 4.2, 1200},
-			Results{"Local", "Connaught Place", "Buffet", 3.9, 1500},
-			Results{"Diggin", "Chankyapuri", "Mexican, Greek, Italian, Indian", 4.4, 2000},
+		var results []Results
+		var err error
+
+		if results, err = search(r.FormValue("search")); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		encoder := json.NewEncoder(w)
-		err := encoder.Encode(results)
+		err = encoder.Encode(results)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	})
+
 	fmt.Println(http.ListenAndServe(":8080", nil))
+}
+
+func search(query string) ([]Results, error) {
+	var resp *http.Response
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", "https://developers.zomato.com/api/v2.1/locations?query="+url.QueryEscape(query), nil)
+	if err != nil {
+		return []Results{}, err
+	}
+	req.Header.Add("user-key", apiKey)
+	resp, err = client.Do(req)
+	if err != nil {
+		return []Results{}, err
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return []Results{}, err
+	}
+	fmt.Print(string(body))
+	return []Results{}, err
 }
