@@ -16,12 +16,20 @@ type person struct {
 	DBStatus bool
 }
 
-type Results struct {
-	RestaurantName string
-	Location       string
-	Cuisines       string
-	UserRating     float32
-	AvgCost        int
+// Restaurant : Attributes of a restaurant
+type Restaurant struct {
+	Name     string `json:"name,attr"`
+	Location struct {
+		Address string `json:"address"`
+		City    string `json:"city"`
+	} `json:"location"`
+	Cuisines   string `json:"cuisines,attr"`
+	UserRating struct {
+		AggregateRating string `json:"aggregate_rating"`
+		RatingText      string `json:"rating_text"`
+		RatingColor     string `json:"rating_color"`
+	} `json:"user_rating"`
+	AverageCostForTwo int `json:"average_cost_for_two"`
 }
 
 const apiKey = "7d2e58d76328a93bb73cb74a167a58d7"
@@ -44,7 +52,7 @@ func main() {
 		}
 	})
 	http.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
-		var results []Results
+		var results []Restaurants
 		var err error
 
 		if results, err = search(r.FormValue("search")); err != nil {
@@ -63,23 +71,37 @@ func main() {
 	fmt.Println(http.ListenAndServe(":8080", nil))
 }
 
-func search(query string) ([]Results, error) {
+// SearchResults : struct to hold results
+type SearchResults struct {
+	Results []Restaurants `json:"restaurants,attr"`
+}
+
+// Restaurants : struct to hold a restaurant
+type Restaurants struct {
+	Restaurant Restaurant `json:"restaurant"`
+}
+
+func search(query string) ([]Restaurants, error) {
 	var resp *http.Response
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", "https://developers.zomato.com/api/v2.1/locations?query="+url.QueryEscape(query), nil)
+	req, err := http.NewRequest("GET", "https://developers.zomato.com/api/v2.1/search?q="+url.QueryEscape(query)+"&count=20", nil)
 	if err != nil {
-		return []Results{}, err
+		return []Restaurants{}, err
 	}
 	req.Header.Add("user-key", apiKey)
 	resp, err = client.Do(req)
 	if err != nil {
-		return []Results{}, err
+		return []Restaurants{}, err
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return []Results{}, err
+		return []Restaurants{}, err
 	}
-	fmt.Print(string(body))
-	return []Results{}, err
+	var s SearchResults
+	if err = json.Unmarshal(body, &s); err != nil {
+		panic(err)
+	}
+	// fmt.Println(s.Results)
+	return s.Results, err
 }

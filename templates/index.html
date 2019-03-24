@@ -37,25 +37,26 @@
                 while(searchResults.childNodes.length){
                     searchResults.removeChild(searchResults.firstChild)
                 }
-                for(var result in response.data){
+                // console.log(response);   
+                response.data.forEach(result => {
                     var row = document.createElement("tr");
                     var restaurantName = document.createElement("td");
-                    restaurantName.textContent = response.data[result].RestaurantName
+                    restaurantName.textContent = result.restaurant.name
                     row.appendChild(restaurantName)
                     var location = document.createElement("td");
-                    location.textContent = response.data[result].Location
+                    location.textContent = result.restaurant.location.address
                     row.appendChild(location)
                     var cuisines = document.createElement("td");
-                    cuisines.textContent = response.data[result].Cuisines
+                    cuisines.textContent = result.restaurant.cuisines
                     row.appendChild(cuisines)
                     var userRating = document.createElement("td");
-                    userRating.textContent = response.data[result].UserRating
+                    userRating.textContent = result.restaurant.user_rating.aggregate_rating
                     row.appendChild(userRating)
                     var avgCost = document.createElement("td");
-                    avgCost.textContent = response.data[result].AvgCost
+                    avgCost.textContent = result.restaurant.average_cost_for_two
                     row.appendChild(avgCost)
                     searchResults.appendChild(row)
-                }
+                });             
             })
             .catch((err) => {
                 console.error(err);                
