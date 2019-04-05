@@ -3,12 +3,12 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"html/template"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 
+	"github.com/codegangsta/negroni"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -41,17 +41,31 @@ type Restaurant struct {
 
 const apiKey = "7d2e58d76328a93bb73cb74a167a58d7"
 
+var db *sql.DB
+
+func verifyDatabase(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+	if err := db.Ping(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	next(w, r)
+}
+
 func main() {
 
 	templates := template.Must(template.ParseFiles("templates/index.html"))
-	db, _ := sql.Open("sqlite3", "dev.db")
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+
+	db, _ = sql.Open("sqlite3", "dev.db")
+
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		err := templates.ExecuteTemplate(w, "index.html", nil)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	})
-	http.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
 		var results []Restaurants
 		var err error
 
@@ -68,24 +82,24 @@ func main() {
 		}
 	})
 
-	http.HandleFunc("/restaurant/add", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/restaurant/add", func(w http.ResponseWriter, r *http.Request) {
 		var restaurant Restaurant
 		var err error
 		if restaurant, err = findRestaurant(r.FormValue("id")); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-		if err = db.Ping(); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
 		_, err = db.Exec("insert into restaurant(sno, name, location, cuisines, user_rating, cost_for_two, rest_id) values (?,?,?,?,?,?,?)",
-					nil, restaurant.Name, restaurant.Location.Address, restaurant.Cuisines, restaurant.UserRating.AggregateRating, restaurant.AverageCostForTwo, restaurant.ID)
+			nil, restaurant.Name, restaurant.Location.Address, restaurant.Cuisines, restaurant.UserRating.AggregateRating, restaurant.AverageCostForTwo, restaurant.ID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 
 	})
 
-	fmt.Println(http.ListenAndServe(":8080", nil))
+	n := negroni.Classic()
+	n.Use(negroni.HandlerFunc(verifyDatabase))
+	n.UseHandler(mux)
+	n.Run(":8080")
 }
 
 func search(query string) ([]Restaurants, error) {
