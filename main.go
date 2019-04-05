@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -11,13 +12,19 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-type person struct {
-	Name     string
-	DBStatus bool
+// SearchResults : struct to hold results
+type SearchResults struct {
+	Results []Restaurants `json:"restaurants,attr"`
+}
+
+// Restaurants : struct to hold a restaurant
+type Restaurants struct {
+	Restaurant Restaurant `json:"restaurant"`
 }
 
 // Restaurant : Attributes of a restaurant
 type Restaurant struct {
+	ID       string `json:"id"`
 	Name     string `json:"name,attr"`
 	Location struct {
 		Address string `json:"address"`
@@ -25,9 +32,9 @@ type Restaurant struct {
 	} `json:"location"`
 	Cuisines   string `json:"cuisines,attr"`
 	UserRating struct {
-		AggregateRating string `json:"aggregate_rating"`
-		RatingText      string `json:"rating_text"`
-		RatingColor     string `json:"rating_color"`
+		AggregateRating interface{} `json:"aggregate_rating"`
+		RatingText      string      `json:"rating_text"`
+		RatingColor     string      `json:"rating_color"`
 	} `json:"user_rating"`
 	AverageCostForTwo int `json:"average_cost_for_two"`
 }
@@ -37,15 +44,8 @@ const apiKey = "7d2e58d76328a93bb73cb74a167a58d7"
 func main() {
 
 	templates := template.Must(template.ParseFiles("templates/index.html"))
-	// db, _ := sql.Open("sqlite3", "dev.db")
+	db, _ := sql.Open("sqlite3", "dev.db")
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// p := person{Name: "Aditya"}
-		// name := r.FormValue("name")
-		// if name != "" {
-		// 	p.Name = name
-		// }
-		// fmt.Print(name)
-		// p.DBStatus = db.Ping() == nil
 		err := templates.ExecuteTemplate(w, "index.html", nil)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -68,23 +68,30 @@ func main() {
 		}
 	})
 
+	http.HandleFunc("/restaurant/add", func(w http.ResponseWriter, r *http.Request) {
+		var restaurant Restaurant
+		var err error
+		if restaurant, err = findRestaurant(r.FormValue("id")); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		if err = db.Ping(); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		_, err = db.Exec("insert into restaurant(sno, name, location, cuisines, user_rating, cost_for_two, rest_id) values (?,?,?,?,?,?,?)",
+					nil, restaurant.Name, restaurant.Location.Address, restaurant.Cuisines, restaurant.UserRating.AggregateRating, restaurant.AverageCostForTwo, restaurant.ID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+
+	})
+
 	fmt.Println(http.ListenAndServe(":8080", nil))
-}
-
-// SearchResults : struct to hold results
-type SearchResults struct {
-	Results []Restaurants `json:"restaurants,attr"`
-}
-
-// Restaurants : struct to hold a restaurant
-type Restaurants struct {
-	Restaurant Restaurant `json:"restaurant"`
 }
 
 func search(query string) ([]Restaurants, error) {
 	var resp *http.Response
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", "https://developers.zomato.com/api/v2.1/search?q="+url.QueryEscape(query)+"&count=20", nil)
+	req, err := http.NewRequest("GET", "https://developers.zomato.com/api/v2.1/search?q="+url.QueryEscape(query)+"&count=30", nil)
 	if err != nil {
 		return []Restaurants{}, err
 	}
@@ -104,4 +111,29 @@ func search(query string) ([]Restaurants, error) {
 	}
 	// fmt.Println(s.Results)
 	return s.Results, err
+}
+
+func findRestaurant(query string) (Restaurant, error) {
+	var resp *http.Response
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", "https://developers.zomato.com/api/v2.1/restaurant?res_id="+url.QueryEscape(query), nil)
+	if err != nil {
+		return Restaurant{}, err
+	}
+	req.Header.Add("user-key", apiKey)
+	resp, err = client.Do(req)
+	if err != nil {
+		return Restaurant{}, err
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return Restaurant{}, err
+	}
+	// fmt.Println(string(body))
+	var rest Restaurant
+	if err = json.Unmarshal(body, &rest); err != nil {
+		panic(err)
+	}
+	return rest, err
 }

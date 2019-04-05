@@ -4,17 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <style>
+        body {
+            padding: 10px;
+        }
+        #search-results tr:hover {
+            background-color: lightgrey;
+            cursor: pointer
+        }
+        input[type=text] {
+            width: 130px;
+            -webkit-transition: width 0.4s ease-in-out;
+            transition: width 0.4s ease-in-out;
+        }
+        input[type=text]:focus {
+            width: 100%;
+        }
+    </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
 </head>
 <body>
     <form id="searchform" onsubmit="return false">
-        <label>Enter city name: </label>
-        <input name = "search">
-        <input type="submit" value="Search" onclick="searchSubmit()">
+        <div class="row">
+            <label class="col-md-2">Enter city name: </label>
+            <input name = "search" class="col-md-7">
+            <div class="col-md-3">
+                <input type="submit" value="Search" class ="btn btn-primary" onclick="searchSubmit()">
+            </div>
+        </div>
     </form>
     <br>
-    <table width="100%" border="1px solid black">
-        <thead>
+    <table width="100%" class = "table table-bordered">
+        <thead class="thead-dark">
             <tr style="text-align:center">
                 <th width = "20%">Restaurant Name</th>
                 <th width = "25%">Location</th>
@@ -50,11 +72,25 @@
                     cuisines.textContent = result.restaurant.cuisines
                     row.appendChild(cuisines)
                     var userRating = document.createElement("td");
-                    userRating.textContent = result.restaurant.user_rating.aggregate_rating
+                    var userRatingContent = document.createElement("span");
+                    userRatingContent.textContent = result.restaurant.user_rating.aggregate_rating;
+                    userRatingContent.style.backgroundColor = "#" + result.restaurant.user_rating.rating_color;
+                    userRatingContent.style.padding = "5px";
+                    userRatingContent.style.borderRadius = "3px";
+                    userRating.appendChild(userRatingContent)
                     row.appendChild(userRating)
                     var avgCost = document.createElement("td");
                     avgCost.textContent = result.restaurant.average_cost_for_two
                     row.appendChild(avgCost)
+                    row.addEventListener("click", () => {
+                        axios.get("/restaurant/add?id=" + result.restaurant.id)
+                        .then((response) => {
+                            console.log(response);                            
+                        })
+                        .catch((err) => {
+                            console.log(err);
+                        })
+                    })
                     searchResults.appendChild(row)
                 });             
             })
