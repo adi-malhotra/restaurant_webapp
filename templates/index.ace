@@ -1,11 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-    <style>
+= doctype html
+html
+  head
+    = css
         body {
             padding: 10px;
         }
@@ -13,41 +9,26 @@
             background-color: lightgrey;
             cursor: pointer
         }
-        input[type=text] {
-            width: 130px;
-            -webkit-transition: width 0.4s ease-in-out;
-            transition: width 0.4s ease-in-out;
-        }
-        input[type=text]:focus {
-            width: 100%;
-        }
-    </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
-</head>
-<body>
-    <form id="searchform" onsubmit="return false">
-        <div class="row">
-            <label class="col-md-2">Enter city name: </label>
-            <input name = "search" class="col-md-7">
-            <div class="col-md-3">
-                <input type="submit" value="Search" class ="btn btn-primary" onclick="searchSubmit()">
-            </div>
-        </div>
-    </form>
-    <br>
-    <table width="100%" class = "table table-bordered">
-        <thead class="thead-dark">
-            <tr style="text-align:center">
-                <th width = "20%">Restaurant Name</th>
-                <th width = "25%">Location</th>
-                <th width = "25%">Cuisines</th>
-                <th width = "15%">User Rating</th>
-                <th width = "15%">Average cost for two</th>
-            </tr>
-        </thead>
-        <tbody id="search-results" style="text-align:center"></tbody>
-    </table>
-    <script type="text/javascript">
+    link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous"
+    script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"
+  body
+    form id="searchform" onsubmit="return false"
+      .row
+        label for="search" class="col-md-3" Enter city name:
+        input name="search" class="col-md-6"
+        .col-md-3
+          input type="submit" class="btn btn-primary" value="Search" onclick="searchSubmit()"
+    br
+    table width="100%" class="table table-bordered"
+      thead class="thead-dark"
+        tr style="text-align:center"
+          th width="20%" Restaurant Name
+          th width="25%" Location
+          th width="25%" Cuisines
+          th width="15%" User Rating
+          th width="15%" Average cost for two
+      tbody id="search-results" style="text-align:center"
+    = javascript
         function searchSubmit() {
             var form = document.querySelector("form")
             var data = new FormData(form)
@@ -98,6 +79,3 @@
                 console.error(err);                
             })
         }
-    </script>
-</body>
-</html>
